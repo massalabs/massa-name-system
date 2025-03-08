@@ -22,7 +22,7 @@
     "@massalabs/prettier-config-as": "^0.0.2",
     "@massalabs/react-ui-kit": "^1.0.2",
     "@massalabs/wallet-provider": "^3.1.1",
-    "axios": "^1.7.2",
+    "axios": "^1.8.2",
     "dot-object": "^2.1.5",
     "eslint-plugin-html": "^8.1.1",
     "eslint-plugin-import": "^2.29.1",
