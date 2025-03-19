@@ -6,10 +6,13 @@ import { MnsItem } from './MnsItem';
 import { UpdateTargetModal } from './UpdateTargetModal';
 import { UpdateOwnerModal } from './UpdateOwnerModal';
 import { useMnsList } from '../hooks/useMnsList';
+import { DnsUserEntryListResult } from '../utils/interface';
 
 export function MNSList() {
   const { connectedAccount } = useAccountStore();
-  const [domainToUpdate, setDomainToUpdate] = useState<string>('');
+  const [domainToUpdate, setDomainToUpdate] = useState<
+    DnsUserEntryListResult | undefined
+  >();
   const [ownershipModalOpen, setOwnershipModalOpen] = useState<boolean>(false);
   const [updateTargetModalOpen, setTargetModalOpen] = useState<boolean>(false);
 
@@ -18,12 +21,12 @@ export function MNSList() {
 
   const { listSpinning, list, mnsContract } = useMnsStore();
 
-  const onUpdateTarget = (domain: string) => {
+  const onUpdateTarget = (domain: DnsUserEntryListResult) => {
     setDomainToUpdate(domain);
     setTargetModalOpen(true);
   };
 
-  const onUpdateOwnership = (domain: string) => {
+  const onUpdateOwnership = (domain: DnsUserEntryListResult) => {
     setDomainToUpdate(domain);
     setOwnershipModalOpen(true);
   };
@@ -52,12 +55,12 @@ export function MNSList() {
             <UpdateTargetModal
               isOpen={updateTargetModalOpen}
               close={() => setTargetModalOpen(false)}
-              domain={domainToUpdate}
+              mns={domainToUpdate!}
             />
             <UpdateOwnerModal
               isOpen={ownershipModalOpen}
               close={() => setOwnershipModalOpen(false)}
-              domain={domainToUpdate}
+              mns={domainToUpdate!}
               owner={connectedAccount.address}
             />
 
@@ -71,8 +74,8 @@ export function MNSList() {
                   key={idx}
                   item={item}
                   isPending={isPending}
-                  onUpdateTarget={() => onUpdateTarget(item.domain)}
-                  onUpdateOwnership={() => onUpdateOwnership(item.domain)}
+                  onUpdateTarget={() => onUpdateTarget(item)}
+                  onUpdateOwnership={() => onUpdateOwnership(item)}
                   onDelete={() => deleteDnsEntry(item.domain)}
                 />
               ))
