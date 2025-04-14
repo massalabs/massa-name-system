@@ -3,6 +3,18 @@ import { FAQ } from './components/FAQ';
 import { ConnectMassaWallet, Button, Toast } from '@massalabs/react-ui-kit';
 import { MNSManagement } from './components/MnsManagement';
 import useAccountSync from './hooks/useAccountSync';
+import { Disclaimer } from './components/Disclaimer';
+
+const legalDocs = [
+  {
+    title: 'Massa Community Charter',
+    link: '/legal/massa-community-charter_V1.pdf',
+  },
+  {
+    title: 'Terms of Use - Massa Decentralized Web',
+    link: '/legal/Terms-of-use-massa-decentralized-web_V1.pdf',
+  },
+];
 
 function App() {
   useAccountSync();
@@ -10,6 +22,7 @@ function App() {
   return (
     <>
       <Toast />
+      <Disclaimer docs={legalDocs}></Disclaimer>
       <div className="sm:w-full md:max-w-4xl mx-auto mt-10">
         <div className="flex justify-between mb-2">
           <img

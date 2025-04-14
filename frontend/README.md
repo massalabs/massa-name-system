@@ -28,3 +28,15 @@ export default {
 - Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
 - Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
 - Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+
+
+## Disclaimer
+A disclaimer popup displayed with documents the user has to read and accept.
+These documents are located in the [public/legal](./public/legal/) folder.
+Each document name contains it's version in the following format: `{name}_V{version number}.{file extension}`.
+To update or add a new document, you have to:
+1) Increment the version of the file you are updating. If you create a new one set the version V1
+2) Update the link with the correct version in the `legalDocs` list in the [src/App.tsx](./src/App.tsx) file.
+
+## License
+See [here](../LICENSE.md)
