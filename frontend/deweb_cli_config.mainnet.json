@@ -1,0 +1,11 @@
+{
+  "address": "AS12bwBRsfKPNLaoqfcuGecjB3z5vPFkAxjj9AhNJs64Vg3ckLCuW",
+  "node_url": "https://mainnet.massa.net/api/v2",
+  "metadatas": {
+    "TITLE": "Massa Name System",
+    "DESCRIPTION": "Decentralized naming service which allows users and smart contracts to be recognized on the Massa blockchain.",
+    "KEYWORD1": "MNS",
+    "KEYWORD2": "decentralizedWeb",
+    "KEYWORD3": "DeWeb"
+  }
+}

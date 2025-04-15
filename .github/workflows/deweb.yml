@@ -1,0 +1,39 @@
+name: DeWeb deployer
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Deploy to Massa DeWeb
+        id: deploy
+        uses: massalabs/deweb-gh-action@v0.0.7
+        with:
+          config_file: frontend/deweb_cli_config.mainnet.json
+          source_folder: frontend/dist
+        env:
+          MASSA_DEWEB_SECRET_KEY: ${{ secrets.MASSA_DEWEB_MAINNET_PKEY }}
+
+      - name: Get deployed website address
+        run: |
+          echo "Deployed website address: ${{ steps.deploy.outputs.deployed-website }}"
