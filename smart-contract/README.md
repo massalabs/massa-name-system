@@ -58,3 +58,6 @@ npm run test
 ```shell
 npm run fmt
 ```
+
+## License
+See [here](../LICENSE.md)
