@@ -27,7 +27,7 @@ jobs:
 
       - name: Deploy to Massa DeWeb
         id: deploy
-        uses: massalabs/deweb-gh-action@v0.0.8
+        uses: massalabs/deweb-gh-action@v0.0.9
         with:
           config_file: frontend/deweb_cli_config.mainnet.json
           source_folder: frontend/dist
