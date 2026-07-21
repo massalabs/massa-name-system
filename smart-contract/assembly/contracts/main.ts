@@ -6,6 +6,7 @@ import {
   getKeys,
   setBytecode,
   transferCoins,
+  transferRemaining,
 } from '@massalabs/massa-as-sdk';
 import {
   Args,
@@ -21,6 +22,8 @@ import {
 } from '@massalabs/sc-standards/assembly/contracts/MRC721/enumerable/MRC721Enumerable-internals';
 import {
   transferFrom as _transferFrom,
+  setApprovalForAll as _setApprovalForAll,
+  approve as _approveNFT,
   mrc721Constructor,
 } from '@massalabs/sc-standards/assembly/contracts/MRC721/enumerable/MRC721Enumerable';
 import {
@@ -213,17 +216,10 @@ export function dnsAlloc(binaryArgs: StaticArray<u8>): StaticArray<u8> {
   // @ts-ignore (fix for IDE)
   Storage.set(COUNTER_KEY, u256ToBytes(counter + u256.One));
 
-  const storageCosts = initialBalance - balance();
-  const totalCost = calculateCreationCost(domain.length) + storageCosts;
-  const transferredCoins = Context.transferredCoins();
+  // The caller must cover the storage created above plus the registration fee
+  // (kept by the contract as `callerDebit`); any excess coins are refunded.
+  transferRemaining(initialBalance, calculateCreationCost(domain.length));
 
-  assert(
-    transferredCoins >= totalCost,
-    `Insufficient funds to register domain. Provided: ${transferredCoins.toString()}, Needed: ${totalCost.toString()}.`,
-  );
-  if (transferredCoins > totalCost) {
-    transferCoins(Context.caller(), transferredCoins - totalCost);
-  }
   return u256ToBytes(counter);
 }
 
@@ -268,15 +264,14 @@ export function dnsFree(binaryArgs: StaticArray<u8>): void {
   Storage.del(idToDomainKey);
   Storage.del(domainToTokenIdKey(domainBytes));
 
-  const finalBalance = balance();
-  const storageCostsRefunded = finalBalance - initialBalance;
-
-  const refundTotal =
-    calculateCreationCost(domainBytes.length) / 2 +
-    storageCostsRefunded +
-    Context.transferredCoins();
-
-  transferCoins(Context.caller(), refundTotal);
+  // Refund the storage freed by the deletions plus any coins the caller
+  // attached, then send back half of the registration fee. transferRemaining
+  // must run first so it measures the freed storage before the fee refund.
+  transferRemaining(initialBalance);
+  transferCoins(
+    Context.caller(),
+    calculateCreationCost(domainBytes.length) / 2,
+  );
 }
 
 /**
@@ -332,6 +327,7 @@ export function dnsUpdateTarget(binaryArgs: StaticArray<u8>): void {
     throw new Error('Update Target is locked');
   }
 
+  const initialBalance = balance();
   const args = new Args(binaryArgs);
   const domain = args
     .nextString()
@@ -361,6 +357,8 @@ export function dnsUpdateTarget(binaryArgs: StaticArray<u8>): void {
   Storage.set(targetToDomainKey(newTargetBytes, domainBytes), []);
   // Update the target for the domain
   Storage.set(domainToTargetKay, newTargetBytes);
+
+  transferRemaining(initialBalance);
 }
 
 /**
@@ -441,8 +439,34 @@ export function ownerOf(binaryArgs: StaticArray<u8>): StaticArray<u8> {
 }
 
 export function transferFrom(binaryArgs: StaticArray<u8>): void {
+  const initialBalance = balance();
   assert(!Storage.has(lockedKey()), 'Contract is locked');
   _transferFrom(binaryArgs);
+  transferRemaining(initialBalance);
+}
+
+/**
+ * Enable or disable approval for an operator to manage all of the caller's tokens.
+ * Wraps the standard MRC721 setApprovalForAll so the caller pays for the storage
+ * of a new approval entry instead of the contract (see transferRemaining).
+ * @param binaryArgs - (operator: string, approved: bool)
+ */
+export function setApprovalForAll(binaryArgs: StaticArray<u8>): void {
+  const initialBalance = balance();
+  _setApprovalForAll(binaryArgs);
+  transferRemaining(initialBalance);
+}
+
+/**
+ * Approve an address to transfer a specific token.
+ * Wraps the standard MRC721 approve so the caller pays for any storage created
+ * instead of the contract (see transferRemaining).
+ * @param binaryArgs - (approved: string, tokenId: u256)
+ */
+export function approve(binaryArgs: StaticArray<u8>): void {
+  const initialBalance = balance();
+  _approveNFT(binaryArgs);
+  transferRemaining(initialBalance);
 }
 
 export {
@@ -452,9 +476,7 @@ export {
 
 export {
   isApprovedForAll,
-  setApprovalForAll,
   getApproved,
-  approve,
   balanceOf,
   symbol,
   name,

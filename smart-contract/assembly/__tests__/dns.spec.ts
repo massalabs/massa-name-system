@@ -793,6 +793,9 @@ describe('Test NFT approve', () => {
     switchUser(owner);
   });
   test('Test NFT approve success', () => {
+    // approve/transferFrom now reconcile storage cost with the caller; call them
+    // without attaching coins (storage is free in the mock) so no refund is due.
+    mockTransferredCoins(0);
     let argsApprove = new Args();
     argsApprove.add(target);
     let tokenId = bytesToU256(
@@ -881,6 +884,10 @@ describe('Test setApprovalForAll', () => {
     switchUser(owner);
   });
   test('Test setApprovalForAll', () => {
+    // setApprovalForAll/transferFrom now reconcile storage cost with the caller;
+    // call them without attaching coins (storage is free in the mock) so no
+    // refund is due.
+    mockTransferredCoins(0);
     let argsApprove = new Args();
     argsApprove.add(target);
     argsApprove.add(true);
