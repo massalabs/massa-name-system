@@ -8,6 +8,7 @@
         "build": "npx massa-as-compile",
         "clean": "rimraf build",
         "deploy": "npm run build && tsx src/deploy.ts",
+        "upgradeSC": "npm run build && tsx src/upgradeSC.ts",
         "testDns": "tsx src/test.ts",
         "info": "tsx src/infos.ts",
         "migrate": "tsx src/migrate.ts",
