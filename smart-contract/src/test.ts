@@ -4,7 +4,7 @@ import { MNS_CONTRACT } from './config';
 
 const provider = await initProvider();
 
-const MNSContract = new MNS(provider, MNS_CONTRACT);
+const MNSContract = await MNS.init(provider);
 
 // Claim dns
 const domain = 'testaurelienlolloulilolsdsdssdsd';
