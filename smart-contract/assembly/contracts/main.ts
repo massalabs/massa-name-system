@@ -2,8 +2,9 @@ import {
   Address,
   Context,
   Storage,
+  MAX_DATASTORE_KEYS_PAGE,
   balance,
-  getKeys,
+  getKeysPage,
   setBytecode,
   transferCoins,
   transferRemaining,
@@ -288,7 +289,33 @@ export function dnsResolve(args: StaticArray<u8>): StaticArray<u8> {
   return Storage.get(domainToTargetKey(stringToBytes(domain)));
 }
 
+/**
+ * Appends the domains held in `keys` to `domains`, comma separated.
+ * Domains cannot contain a comma (see isValidDomain), so the separator is unambiguous.
+ */
+function appendDomains(
+  domains: u8[],
+  keys: Array<StaticArray<u8>>,
+  prefixLength: i32,
+): void {
+  for (let i = 0; i < keys.length; i++) {
+    if (domains.length > 0) {
+      domains.push(44 /* coma */);
+    }
+    const key = keys[i];
+    for (let j = prefixLength; j < key.length; j++) {
+      domains.push(key[j]);
+    }
+  }
+}
+
 /** Get a list of domain associated with an address
+ *
+ * @remarks
+ * From MIP-0002, one datastore-key call returns at most MAX_DATASTORE_KEYS_PAGE keys, so the domains
+ * are read one page at a time. The whole list is still built in memory: callers that can page should
+ * use dnsReverseResolvePage.
+ *
  * @param args - (targetAddress: string)
  *
  * @returns List of domains as string separated by comma
@@ -300,21 +327,54 @@ export function dnsReverseResolve(args: StaticArray<u8>): StaticArray<u8> {
     .expect('address argument is missing or invalid');
 
   const prefix = targetToDomainKeyPrefix(stringToBytes(targetAddress));
-  const keys = getKeys(prefix);
-
-  const prefixLength = prefix.length;
   let domains: u8[] = [];
 
-  for (let i = 0; i < keys.length; i++) {
-    const domain = keys[i].slice(prefixLength);
-
-    domains = domains.concat(domain);
-
-    if (i < keys.length - 1) {
-      domains.push(44 /* coma */);
+  let keys = getKeysPage(prefix);
+  while (keys.length > 0) {
+    appendDomains(domains, keys, prefix.length);
+    // A short page means the range is exhausted.
+    if (keys.length < MAX_DATASTORE_KEYS_PAGE) {
+      break;
     }
+    // Exclusive cursor: the next page starts after the last key read.
+    keys = getKeysPage(prefix, keys[keys.length - 1]);
   }
 
+  return StaticArray.fromArray(domains);
+}
+
+/** Get one page of the domains associated with an address, in ascending byte order
+ *
+ * @param args - (targetAddress: string, startDomain: string, count: i32)
+ * - startDomain: exclusive cursor, the last domain of the previous page. Empty starts from the first domain.
+ * - count: page size, between 1 and MAX_DATASTORE_KEYS_PAGE (500).
+ *
+ * @returns Up to `count` domains as string separated by comma. Fewer than `count` means there are no more.
+ */
+export function dnsReverseResolvePage(args: StaticArray<u8>): StaticArray<u8> {
+  const argsObj = new Args(args);
+  const targetAddress = argsObj
+    .nextString()
+    .expect('address argument is missing or invalid');
+  const startDomain = argsObj
+    .nextString()
+    .expect('startDomain argument is missing or invalid');
+  const count = argsObj
+    .nextI32()
+    .expect('count argument is missing or invalid');
+  assert(
+    count > 0 && count <= MAX_DATASTORE_KEYS_PAGE,
+    'count must be between 1 and ' + MAX_DATASTORE_KEYS_PAGE.toString(),
+  );
+
+  const prefix = targetToDomainKeyPrefix(stringToBytes(targetAddress));
+  const startKey =
+    startDomain.length > 0
+      ? prefix.concat(stringToBytes(startDomain))
+      : new StaticArray<u8>(0);
+
+  let domains: u8[] = [];
+  appendDomains(domains, getKeysPage(prefix, startKey, count), prefix.length);
   return StaticArray.fromArray(domains);
 }
 

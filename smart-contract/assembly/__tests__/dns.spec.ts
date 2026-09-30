@@ -27,6 +27,7 @@ import {
   getApproved,
   isApprovedForAll,
   dnsReverseResolve,
+  dnsReverseResolvePage,
   dnsUnlock,
   dnsLock,
 } from '../contracts/main';
@@ -573,6 +574,103 @@ describe('Test dnsReverseResolve', () => {
     expect(dnsReverseResolve(argsResolve.serialize())).toStrictEqual(
       stringToBytes(''),
     );
+  });
+});
+
+function allocForTarget(domainName: string): void {
+  let args = new Args();
+  args.add(domainName);
+  args.add(target);
+  mockBalance(owner, transferredAmount);
+  mockTransferredCoins(transferredAmount);
+  mockBalance(scAddress, transferredAmount);
+  dnsAlloc(args.serialize());
+}
+
+// Zero padded so that byte order, the order of the datastore keys, is numeric order.
+function pagedDomain(i: i32): string {
+  return 'paged' + i.toString().padStart(7, '0');
+}
+
+// Allocates `n` domains to `target` and returns them comma separated.
+function allocPagedDomains(n: i32): string {
+  let expected = '';
+  for (let i = 0; i < n; i++) {
+    const domainName = pagedDomain(i);
+    allocForTarget(domainName);
+    expected += i > 0 ? ',' + domainName : domainName;
+  }
+  return expected;
+}
+
+function joinPagedDomains(from: i32, to: i32): string {
+  let joined = '';
+  for (let i = from; i < to; i++) {
+    joined += i > from ? ',' + pagedDomain(i) : pagedDomain(i);
+  }
+  return joined;
+}
+
+function reverseResolvePage(startDomain: string, count: i32): StaticArray<u8> {
+  return dnsReverseResolvePage(
+    new Args().add(target).add(startDomain).add(count).serialize(),
+  );
+}
+
+describe('Test reverse resolve past the datastore keys page', () => {
+  beforeEach(() => {
+    resetStorage();
+    mockAdminContext(true);
+    constructor(new Args().serialize());
+    mockAdminContext(false);
+    dnsUnlock(new Args().serialize());
+  });
+  afterEach(() => {
+    mockTransferredCoins(0);
+    mockBalance(scAddress, 0);
+    switchUser(owner);
+  });
+  test('reverse resolve returns every domain over several pages', () => {
+    const expected = allocPagedDomains(1001);
+    expect(dnsReverseResolve(new Args().add(target).serialize())).toStrictEqual(
+      stringToBytes(expected),
+    );
+  });
+  test('reverse resolve returns exactly one full page', () => {
+    const expected = allocPagedDomains(500);
+    expect(dnsReverseResolve(new Args().add(target).serialize())).toStrictEqual(
+      stringToBytes(expected),
+    );
+  });
+  test('pages chain from the last domain of the previous page', () => {
+    allocPagedDomains(1001);
+    expect(reverseResolvePage('', 500)).toStrictEqual(
+      stringToBytes(joinPagedDomains(0, 500)),
+    );
+    expect(reverseResolvePage(pagedDomain(499), 500)).toStrictEqual(
+      stringToBytes(joinPagedDomains(500, 1000)),
+    );
+    expect(reverseResolvePage(pagedDomain(999), 500)).toStrictEqual(
+      stringToBytes(pagedDomain(1000)),
+    );
+    expect(reverseResolvePage(pagedDomain(1000), 500)).toStrictEqual(
+      stringToBytes(''),
+    );
+  });
+  test('a page smaller than the maximum', () => {
+    allocPagedDomains(5);
+    expect(reverseResolvePage(pagedDomain(1), 2)).toStrictEqual(
+      stringToBytes(pagedDomain(2) + ',' + pagedDomain(3)),
+    );
+  });
+  test('a page of an address without domains is empty', () => {
+    expect(reverseResolvePage('', 500)).toStrictEqual(stringToBytes(''));
+  });
+  throws('a page of 0 domains', () => {
+    reverseResolvePage('', 0);
+  });
+  throws('a page above the datastore keys page', () => {
+    reverseResolvePage('', 501);
   });
 });
 
