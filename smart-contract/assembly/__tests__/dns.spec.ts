@@ -39,6 +39,7 @@ import {
   mockTransferredCoins,
   resetStorage,
   getKeys,
+  Storage,
 } from '@massalabs/massa-as-sdk';
 import { u256 } from 'as-bignum/assembly';
 // eslint-disable-next-line max-len
@@ -922,5 +923,35 @@ describe('Test setApprovalForAll', () => {
     );
     argsTransfer.add(tokenId);
     transferFrom(argsTransfer.serialize());
+  });
+});
+
+// An empty operator used to share its storage key with "the empty owner",
+// which let anyone approve themselves on the next token id before it was minted.
+describe('Empty operator approval', () => {
+  beforeEach(() => {
+    resetStorage();
+    mockAdminContext(true);
+    constructor(new Args().serialize());
+    mockAdminContext(false);
+    dnsUnlock(new Args().serialize());
+    switchUser(target);
+    mockTransferredCoins(0);
+  });
+  afterEach(() => {
+    mockTransferredCoins(0);
+    mockBalance(scAddress, 0);
+    switchUser(owner);
+  });
+  throws('setApprovalForAll with an empty operator', () => {
+    setApprovalForAll(new Args().add('').add(true).serialize());
+  });
+  throws('approve on a token id that is not minted yet', () => {
+    // grant written by setApprovalForAll('') before the fix
+    Storage.set(
+      ([0x06] as StaticArray<u8>).concat(stringToBytes(target)),
+      boolToByte(true),
+    );
+    approve(new Args().add(target).add(u256.Zero).serialize());
   });
 });
