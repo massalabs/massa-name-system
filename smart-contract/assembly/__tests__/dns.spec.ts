@@ -29,6 +29,7 @@ import {
   dnsReverseResolve,
   dnsUnlock,
   dnsLock,
+  version,
 } from '../contracts/main';
 import {
   balance,
@@ -42,6 +43,7 @@ import {
   Storage,
 } from '@massalabs/massa-as-sdk';
 import { u256 } from 'as-bignum/assembly';
+import { VERSION } from '@massalabs/sc-standards/assembly/contracts/MRC721/MRC721';
 // eslint-disable-next-line max-len
 import { OWNED_TOKENS_KEY } from '@massalabs/sc-standards/assembly/contracts/MRC721/enumerable/MRC721Enumerable-internals';
 
@@ -953,5 +955,11 @@ describe('Empty operator approval', () => {
       boolToByte(true),
     );
     approve(new Args().add(target).add(u256.Zero).serialize());
+  });
+});
+
+describe('Version', () => {
+  test('exposes the MRC721 implementation version', () => {
+    expect(version([])).toStrictEqual(VERSION);
   });
 });
