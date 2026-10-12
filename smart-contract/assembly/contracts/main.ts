@@ -481,4 +481,5 @@ export {
   symbol,
   name,
   totalSupply,
+  version,
 } from '@massalabs/sc-standards/assembly/contracts/MRC721/enumerable/MRC721Enumerable';
