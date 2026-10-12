@@ -12,6 +12,7 @@ import {
   UPDATE_OWNER_OP_MESSAGE,
   UPDATE_TARGET_OP_MESSAGE,
 } from '../const/operationMessages';
+import { STORAGE_COINS } from '../const/sc';
 
 export function useMnsManagement() {
   const { setMnsContract, mnsContract } = useMnsStore();
@@ -39,7 +40,9 @@ export function useMnsManagement() {
   ) {
     if (!provider) return;
     try {
-      const operation = await mnsContract.updateTarget(domain, targetAddress);
+      const operation = await mnsContract.updateTarget(domain, targetAddress, {
+        coins: STORAGE_COINS,
+      });
       await handleOperation(operation, UPDATE_TARGET_OP_MESSAGE);
       await getUserDomains(provider.address);
       refreshBalance(false);
@@ -60,6 +63,7 @@ export function useMnsManagement() {
         domain,
         currentOwner,
         newOwner,
+        { coins: STORAGE_COINS },
       );
       await handleOperation(operation, UPDATE_OWNER_OP_MESSAGE);
       getUserDomains(provider.address);
