@@ -313,8 +313,10 @@ function appendDomains(
  *
  * @remarks
  * From MIP-0002, one datastore-key call returns at most MAX_DATASTORE_KEYS_PAGE keys, so the domains
- * are read one page at a time. The whole list is still built in memory: callers that can page should
- * use dnsReverseResolvePage.
+ * are read one page at a time. The whole list is still built in memory, and the contract memory is capped
+ * at 4 MiB: the call runs out of memory from about 10,000 domains of 100 characters (1 MB of output),
+ * whatever the gas. Anyone can point domains at any address, so callers that can page should use
+ * dnsReverseResolvePage, whose memory does not grow with the number of domains.
  *
  * @param args - (targetAddress: string)
  *
